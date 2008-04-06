@@ -1,0 +1,47 @@
+SlimAttributes
+==============
+
+This is a small patch to the ActiveRecord Mysql adaptor that stops rails from using the all_hashes / each_hash mechanism - which is what is called when you do a find.
+
+It is faster, and uses less memory.
+
+Measuring with just ActiveRecord code - fetching stuff from the database - we see anything up to a 50% (or more) speed increase, but I suppose it really depends on your system and environment, and what you are doing with the results from the database.  Measure your own system and send me the results!
+
+
+Installation
+============
+
+You're going to need the mysql headers for this to work.
+
+cd vendor/plugins/slim_attributes
+ruby extconf.rb --with-mysql-config
+make
+sudo make install
+
+
+Description
+===========
+
+The reason for overriding all_hashes is threefold:
+
+* making a hash of each and every row returned from the database is slow
+* ruby makes frozen copies of each column name string (for the keys) which results in a great many strings which are not really needed
+* we observe that it's not often that all the fields of rows fetched from the database are actually used
+
+So this is an alternative implementation of all_hashes that returns a 'fake hash' which contains a hash of the column names (the same hash of names is used for every row), and also contains the row data in an area memcpy'd directly from the mysql API.
+
+The field contents are then instantiated into Ruby strings on demand - ruby strings are only made if you need them.  Note that if you always look at all the columns when you fetch data from the database then this won't necessarily be faster that the unpatched mysql adapter.  But it won't be much slower either, and we do expect that most times not all the columns from a result set are accessed.
+
+Note that the 'fake hash' quacks like a hash in many ways, but not all ways.  So @attributes in an ActiveRecord object may not behave as you are expecting it to, and it particularly won't work if you try to add a key to it that is not a column name in the result set.
+
+@attributes["not a column name"] = "something"
+=> RuntimeError: Key was not a column name from the result set
+
+Hash has many methods that are not supported by the fake hash, but I found that the ones I have implemented have been sufficient for use in our Rails app.  It should be fairly easy to implement most of the missing methods if needed, but I did not wish this patch to be larger than necessary.
+
+===========
+
+No warranty - this plugin likely needs some more work if you want it to be foolproof.  However, that said, we are using it in our production environment with good results.
+
+
+Copyright (c) 2008 Stephen Sykes, released under the MIT license
