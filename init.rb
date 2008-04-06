@@ -1,7 +1,5 @@
-if RunningOn.server? || RunningOn.sds_laptop?
-  ActiveRecord::Base.require_mysql
-  class Mysql::Result; class FakeResultHash; end; end
-  require 'SlimAttributes'
-  require 'slim'
-end
+ActiveRecord::Base.require_mysql
+class Mysql::Result; class RowHash; end; end
+require 'SlimAttributes'
+require 'slim'
 

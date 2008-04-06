@@ -1,76 +1,36 @@
 class Mysql::Result
-
-  class FakeResultHash
-    include Enumerable
-    
+  class RowHash
     def marshal_dump
-      [@field_indexes, values]
+      to_hash
     end
     
-    def marshal_load(arr)
-      @field_indexes, @row = arr
-      @totally_fetched = true
+    def marshal_load(hash)
+      @real_hash = hash
     end
 
     def has_key?(name)
-      @field_indexes[name]
+      @real_hash ? @real_hash.has_key?(name) : @field_indexes[name]
     end
 
     alias_method :include?, :has_key?
 
     def keys
-      @field_indexes.keys
+      @real_hash ? @real_hash.keys : @field_indexes.keys
     end
 
-    def values
-      fetch_all
-      @row
-    end
-
-    def delete(name)
-      index = @field_indexes[name]
-      if index
-        fetch_all
-        @field_indexes.delete(name)
-        @field_indexes.each {|k, v| @field_indexes[k] -= 1 if v > index}
-        @row.delete_at(index)
-      else
-        nil
-      end
-    end
-    
     def to_hash
-      fetch_all
-      @real_hash ||= @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = @row[fi[1]]; memo}
-    end
-
-    def update(ahash)
-      fetch_all
-      ahash.each do |k, v|
-        index = @field_indexes[k]
-        if index
-          @row[index] = v
-        else
-          raise "Not a valid attribute name"
-        end
-      end
-      self
-    end
-    
-    alias_method :merge!, :update
-
-    def each
-      fetch_all
-      @field_indexes.each {|f,i| yield(f, @row[i])}
-    end
-    
-    private
-    def fetch_all
-      unless @totally_fetched
+      @real_hash ||= begin
         @field_indexes.each_value {|v| fetch_by_index(v)}
-        @totally_fetched = true
+        @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = @row[fi[1]]; memo}
       end
+    end
+
+    def to_a
+      to_hash.to_a
+    end
+
+    def method_missing(name, *args, &block)
+      to_hash.send(name, *args, &block)
     end
   end
-
 end

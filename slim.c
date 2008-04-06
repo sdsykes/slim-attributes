@@ -9,7 +9,7 @@
 #define GetCharPtr(obj) (Check_Type(obj, T_DATA), (char*)DATA_PTR(obj))
 #define GetCharStarPtr(obj) (Check_Type(obj, T_DATA), (char**)DATA_PTR(obj))
 
-VALUE cFakeResultHash, cClass;
+VALUE cRowHash, cClass;
 
 // from mysql/ruby
 struct mysql_res {
@@ -42,7 +42,7 @@ static VALUE all_hashes(VALUE obj) {
   all_hashes_ary = rb_ary_new2(nr);
   for (i=0; i<nr; i++) {
     VALUE frh;
-    frh = rb_class_new_instance(0, NULL, cFakeResultHash);
+    frh = rb_class_new_instance(0, NULL, cRowHash);
     rb_iv_set(frh, "@field_indexes", col_names_hsh);
     row = mysql_fetch_row(res);         // get the row
 
@@ -101,19 +101,25 @@ static VALUE fetch_by_index(VALUE obj, VALUE index) {
   return contents;
 }
 
-static VALUE fetch(VALUE obj, VALUE name) {
-  VALUE hash_lookup = rb_hash_aref(rb_iv_get(obj, "@field_indexes"), name);
-
+static VALUE slim_fetch(VALUE obj, VALUE name) {
+  VALUE real_hash, hash_lookup;
+  real_hash = rb_iv_get(obj, "@real_hash");
+  if (!NIL_P(real_hash)) return rb_hash_aref(real_hash, name);
+  hash_lookup = rb_hash_aref(rb_iv_get(obj, "@field_indexes"), name);
   if (NIL_P(hash_lookup)) return Qnil;
   return fetch_by_index(obj, hash_lookup);
 }
 
 static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
-  VALUE hash_lookup = rb_hash_aref(rb_iv_get(obj, "@field_indexes"), name);
+  VALUE real_hash, hash_lookup;
   VALUE row_ary, row_info_obj;
   long col_number;
+
+  real_hash = rb_iv_get(obj, "@real_hash");
+  if (!NIL_P(real_hash)) return rb_hash_aset(real_hash, name, val);
   
-  if (NIL_P(hash_lookup)) rb_raise(rb_eRuntimeError, "Key was not a column name from the result set");
+  hash_lookup = rb_hash_aref(rb_iv_get(obj, "@field_indexes"), name);  
+  if (NIL_P(hash_lookup)) return rb_funcall(rb_funcall(obj, rb_intern("to_hash"), 0), rb_intern("[]="), 2, name, val);
   row_ary = rb_iv_get(obj, "@row");
   col_number = FIX2LONG(hash_lookup);
   rb_ary_store(row_ary, col_number, val);
@@ -127,10 +133,9 @@ void Init_SlimAttributes() {
   c = rb_const_get_at(c, rb_intern("Mysql"));
   c = rb_const_get_at(c, rb_intern("Result"));
   rb_define_method(c, "all_hashes", (VALUE(*)(ANYARGS))all_hashes, 0);
-  cFakeResultHash = rb_const_get_at(c, rb_intern("FakeResultHash"));
-  cClass = rb_define_class("CObjects", cFakeResultHash);
-  rb_define_method(cFakeResultHash, "fetch", (VALUE(*)(ANYARGS))fetch, 1);
-  rb_define_method(cFakeResultHash, "fetch_by_index", (VALUE(*)(ANYARGS))fetch_by_index, 1);
-  rb_define_alias(cFakeResultHash, "[]", "fetch");
-  rb_define_method(cFakeResultHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
+  cRowHash = rb_const_get_at(c, rb_intern("RowHash"));
+  cClass = rb_define_class("CObjects", cRowHash);
+  rb_define_method(cRowHash, "fetch_by_index", (VALUE(*)(ANYARGS))fetch_by_index, 1);
+  rb_define_method(cRowHash, "[]", (VALUE(*)(ANYARGS))slim_fetch, 1);
+  rb_define_method(cRowHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
 }
