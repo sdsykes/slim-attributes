@@ -23,4 +23,4 @@ else
   end
 end
 
-create_makefile("SlimAttributes")
+create_makefile("slim_attrib_ext")

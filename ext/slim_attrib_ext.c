@@ -128,7 +128,7 @@ static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
   return val;
 }
 
-void Init_SlimAttributes() {
+void Init_slim_attrib_ext() {
   VALUE c = rb_cObject;
   c = rb_const_get_at(c, rb_intern("Mysql"));
   c = rb_const_get_at(c, rb_intern("Result"));

@@ -1,3 +1,5 @@
+require 'mysql'
+
 class Mysql::Result
   class RowHash
     def marshal_dump
@@ -34,3 +36,5 @@ class Mysql::Result
     end
   end
 end
+
+require 'slim_attrib_ext'
