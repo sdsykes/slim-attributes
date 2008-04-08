@@ -1,0 +1,6 @@
+slim_attributes_test:
+  adapter: mysql
+  database: slim_attributes_test
+  username: your_username
+  password: your_password
+  socket: /tmp/mysql.sock

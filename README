@@ -13,10 +13,13 @@ Installation
 
 You're going to need the mysql headers for this to work.
 
-cd vendor/plugins/slim_attributes
-ruby extconf.rb --with-mysql-config
-make
-sudo make install
+Try:
+gem install slim-attributes -- --with-mysql-config
+or:
+gem install slim-attributes
+
+then add this to environment.rb:
+require 'slim_attributes'
 
 
 Description
@@ -32,12 +35,6 @@ So this is an alternative implementation of all_hashes that returns a 'fake hash
 
 The field contents are then instantiated into Ruby strings on demand - ruby strings are only made if you need them.  Note that if you always look at all the columns when you fetch data from the database then this won't necessarily be faster that the unpatched mysql adapter.  But it won't be much slower either, and we do expect that most times not all the columns from a result set are accessed.
 
-Note that the 'fake hash' quacks like a hash in many ways, but not all ways.  So @attributes in an ActiveRecord object may not behave as you are expecting it to, and it particularly won't work if you try to add a key to it that is not a column name in the result set.
-
-@attributes["not a column name"] = "something"
-=> RuntimeError: Key was not a column name from the result set
-
-Hash has many methods that are not supported by the fake hash, but I found that the ones I have implemented have been sufficient for use in our Rails app.  It should be fairly easy to implement most of the missing methods if needed, but I did not wish this patch to be larger than necessary.
 
 ===========
 
