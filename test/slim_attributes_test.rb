@@ -32,14 +32,17 @@ class SlimAttributesTest < Test::Unit::TestCase
 
   def test_item_attributes_can_be_changed
     item = Product.find(:first)
-    old_name = item.name
+    old_name = item.name.dup
+    item.name << "more"
+    assert_equal old_name + "more", item.name, "change must stick"
+    item.nil_test = "not a nil"
+    assert_equal "not a nil", item.nil_test, "change must stick"
     item.name = "something else"
     assert_equal "something else", item.name, "change must stick"
     item.save
     item = Product.find(:first)
     assert_equal "something else", item.name, "change must persist in DB"
-    item.name = old_name
-    item.save
+    assert_equal "not a nil", item.nil_test, "change must persist in DB"
   end
 
   def test_item_attributes_to_a_works
@@ -110,6 +113,11 @@ class SlimAttributesTest < Test::Unit::TestCase
     fh.delete("name")
     assert_nil fh["name"], "name must be nil now"
     assert_raises(ActiveRecord::MissingAttributeError, "name must raise on method call") {item.name}
+  end
+  
+  def test_gc
+    GC.start
+    assert true, "gc didn't crash"
   end
 
   def teardown
