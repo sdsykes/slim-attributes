@@ -21,10 +21,7 @@ class Mysql::Result
     end
 
     def to_hash
-      @real_hash ||= begin
-        @field_indexes.each_value {|v| fetch_by_index(v)}
-        @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = @row[fi[1]]; memo}
-      end
+      @real_hash ||= @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = fetch_by_index(fi[1]); memo}
     end
 
     def to_a
