@@ -30,7 +30,7 @@ static VALUE all_hashes(VALUE obj) {
   unsigned int nf = mysql_num_fields(res);
   unsigned int i, j, s, len;
   unsigned long *lengths;
-  char *row_space, *row_info_space, **pointers_space, *p;
+  char *row_info_space, **pointers_space, *p;
 
   /* hash of column names */
   col_names_hsh = rb_hash_new();
@@ -40,20 +40,19 @@ static VALUE all_hashes(VALUE obj) {
 
   /* array of result rows */
   all_hashes_ary = rb_ary_new2(nr);
-  for (i=0; i<nr; i++) {
+  for (i=0; i < nr; i++) {
     row = mysql_fetch_row(res);         // get the row
     lengths = mysql_fetch_lengths(res); // get lengths
     for (s=j=0; j < nf; j++) s += lengths[j];  // s = total of lengths
     pointers_space = malloc((nf + 1) * sizeof(char *) + s);  // storage for pointers to data followed by data
-    row_space = (char *)(pointers_space + nf + 1);  // pointer to first data item
+    p = *pointers_space = (char *)(pointers_space + nf + 1);  // pointer to first data item
     row_info_space = calloc(nf, 1);
-    for (s=j=0; j < nf; j++, s+=len) {
+    for (j=0; j < nf; j++) {
       len = (unsigned int)lengths[j];
-      p = pointers_space[j] = row_space + s;
       if (!row[j]) row_info_space[j] = SLIM_IS_NULL;
       else memcpy(p, row[j], len); // copy row data in
+      pointers_space[j + 1] = p += len;
     }
-    pointers_space[nf] = row_space + s;
     frh = rb_class_new_instance(0, NULL, cRowHash);
     rb_iv_set(frh, "@pointers", Data_Wrap_Struct(cClass, 0, free, pointers_space));
     rb_iv_set(frh, "@row_info", Data_Wrap_Struct(cClass, 0, free, row_info_space));
