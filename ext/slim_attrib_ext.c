@@ -5,7 +5,6 @@
 #include <mysqld_error.h>
 
 #define GetMysqlRes(obj) (Check_Type(obj, T_DATA), ((struct mysql_res*)DATA_PTR(obj))->res)
-#define GetLongPtr(obj) (Check_Type(obj, T_DATA), (long*)DATA_PTR(obj))
 #define GetCharPtr(obj) (Check_Type(obj, T_DATA), (char*)DATA_PTR(obj))
 #define GetCharStarPtr(obj) (Check_Type(obj, T_DATA), (char**)DATA_PTR(obj))
 
