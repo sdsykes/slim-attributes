@@ -2,20 +2,14 @@ require 'rubygems'
 require 'active_record'
 require 'slim_attributes'
 require 'test/unit'
-
-class Product < ActiveRecord::Base
-  def attributes_iv
-    @attributes
-  end
-end
+require File.dirname(__FILE__) + "/products"
+require File.dirname(__FILE__) + "/slim_db_test_utils"
 
 class SlimAttributesTest < Test::Unit::TestCase
-  DB_NAME = "slim_attributes_test"
-
   def setup
-    connect_and_create_db
-    create_product_table
-    make_some_products
+    SlimDbTestUtils.connect_and_create_db
+    Product.create_product_table
+    Product.make_some_products
   end
 
   def test_finds_all
@@ -121,46 +115,10 @@ class SlimAttributesTest < Test::Unit::TestCase
   end
 
   def teardown
-    if ActiveRecord::Base.connected?
-      ActiveRecord::Base.connection.execute("DROP DATABASE #{DB_NAME}")
-    end
+    SlimDbTestUtils.remove_db
   end
 
   private
-  def connect_and_create_db
-    config = YAML.load(File.read(File.dirname(__FILE__) + "/database.yml"))
-    connect_with_config(config[DB_NAME])
-    unless ActiveRecord::Base.connected?  # database did not exist (as expected)
-      connect_with_config(config[DB_NAME].merge({"database"=>nil}))
-      ActiveRecord::Base.connection.create_database(DB_NAME)
-      connect_with_config(config[DB_NAME])
-    end
-  end
-
-  def connect_with_config(config)
-    begin
-      ActiveRecord::Base.establish_connection(config)
-      ActiveRecord::Base.connection
-    rescue Mysql::Error
-    end
-  end
-
-  def create_product_table
-    ActiveRecord::Base.connection.drop_table(:products) rescue ActiveRecord::StatementInvalid
-    ActiveRecord::Base.connection.create_table(:products) do |t|
-      t.column :name, :string, :limit => 60
-      t.column :created_at, :datetime
-      t.column :number, :integer
-      t.column :nil_test, :string
-      t.column :comment, :text
-    end
-  end
-
-  def make_some_products
-    100.times do |n|
-      Product.create(:name=>"product_#{n}", :number=>n, :comment=>"Made by the test suite")
-    end
-  end
 
   def check_attributes_for(item, i)
     assert_equal "product_#{i}", item.name, "item name must be right"

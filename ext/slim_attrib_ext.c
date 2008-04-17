@@ -20,6 +20,8 @@ struct mysql_res {
 #define SLIM_IS_NULL (char)1
 #define SLIM_IS_SET (char)2
 
+#define GET_COL_IV_NAME(str, col_number) sprintf(str, "@col_%d", col_number)
+
 static VALUE all_hashes(VALUE obj) {
   MYSQL_RES *res = GetMysqlRes(obj);
   MYSQL_FIELD *fields = mysql_fetch_fields(res);
@@ -33,7 +35,7 @@ static VALUE all_hashes(VALUE obj) {
 
   /* hash of column names */
   col_names_hsh = rb_hash_new();
-  for (i=0; i<nf; i++) {
+  for (i=0; i < nf; i++) {
     rb_hash_aset(col_names_hsh, rb_str_new2(fields[i].name), INT2FIX(i));
   }
 
@@ -56,28 +58,27 @@ static VALUE all_hashes(VALUE obj) {
     rb_iv_set(frh, "@pointers", Data_Wrap_Struct(cClass, 0, free, pointers_space));
     rb_iv_set(frh, "@row_info", Data_Wrap_Struct(cClass, 0, free, row_info_space));
     rb_iv_set(frh, "@field_indexes", col_names_hsh);
-    rb_iv_set(frh, "@row", rb_ary_new());    // ready to hold fetched fields
     rb_ary_store(all_hashes_ary, i, frh);
   }
   return all_hashes_ary;
 }
 
 static VALUE fetch_by_index(VALUE obj, VALUE index) {
-  VALUE row_ary, contents;
-  char *row_info, **pointers, *start;
+  VALUE contents;
+  char *row_info, **pointers, *start, col_name[16];
   long col_number = FIX2LONG(index);
   unsigned int length;
   
   row_info = GetCharPtr(rb_iv_get(obj, "@row_info")) + col_number;
   if (*row_info == SLIM_IS_NULL) return Qnil;  // return nil if null from db
-  row_ary = rb_iv_get(obj, "@row");
-  if (*row_info == SLIM_IS_SET) return rb_ary_entry(row_ary, col_number);  // was set already, return array entry
+  GET_COL_IV_NAME(col_name, col_number);
+  if (*row_info == SLIM_IS_SET) return rb_iv_get(obj, col_name);  // was set already, return array entry
   
   pointers = GetCharStarPtr(rb_iv_get(obj, "@pointers"));
   start = pointers[col_number];
   length = pointers[col_number + 1] - start;
   contents = rb_tainted_str_new(start, length);
-  rb_ary_store(row_ary, col_number, contents);
+  rb_iv_set(obj, col_name, contents);
   *row_info = SLIM_IS_SET;
   return contents;
 }
@@ -94,6 +95,7 @@ static VALUE slim_fetch(VALUE obj, VALUE name) {
 static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
   VALUE real_hash, hash_lookup;
   long col_number;
+  char col_name[16];
 
   real_hash = rb_iv_get(obj, "@real_hash");
   if (!NIL_P(real_hash)) return rb_hash_aset(real_hash, name, val);
@@ -101,7 +103,8 @@ static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
   hash_lookup = rb_hash_aref(rb_iv_get(obj, "@field_indexes"), name);  
   if (NIL_P(hash_lookup)) return rb_funcall(rb_funcall(obj, rb_intern("to_hash"), 0), rb_intern("[]="), 2, name, val);
   col_number = FIX2LONG(hash_lookup);
-  rb_ary_store(rb_iv_get(obj, "@row"), col_number, val);
+  GET_COL_IV_NAME(col_name, col_number);
+  rb_iv_set(obj, col_name, val);
   GetCharPtr(rb_iv_get(obj, "@row_info"))[col_number] = SLIM_IS_SET;
   return val;
 }
