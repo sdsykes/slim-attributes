@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "st.h"
 
 #include <mysql.h>
 #include <errmsg.h>
@@ -17,8 +18,8 @@ struct mysql_res {
 };
 
 // row info
-#define SLIM_IS_NULL (char)1
-#define SLIM_IS_SET (char)2
+#define SLIM_IS_NULL (char)0x01
+#define SLIM_IS_SET (char)0x02
 
 #define GET_COL_IV_NAME(str, col_number) sprintf(str, "@col_%d", col_number)
 
@@ -109,6 +110,26 @@ static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
   return val;
 }
 
+static VALUE dup(VALUE obj) {
+  VALUE real_hash, frh, field_indexes;
+  int nf, i;
+  char *row_info_space, col_name[16];
+  
+  real_hash = rb_iv_get(obj, "@real_hash");
+  if (!NIL_P(real_hash)) return rb_obj_dup(real_hash);
+
+  field_indexes = rb_iv_get(obj, "@field_indexes");
+  nf = RHASH(field_indexes)->tbl->num_entries;
+  row_info_space = malloc(nf);
+  memcpy(row_info_space, GetCharPtr(rb_iv_get(obj, "@row_info")), nf);
+  for (i=0; i < nf; i++) row_info_space[i] &= ~SLIM_IS_SET;  // remove any set flags
+  frh = rb_class_new_instance(0, NULL, cRowHash);
+  rb_iv_set(frh, "@pointers", rb_iv_get(obj, "@pointers"));
+  rb_iv_set(frh, "@row_info", Data_Wrap_Struct(cClass, 0, free, row_info_space));
+  rb_iv_set(frh, "@field_indexes", field_indexes);
+  return frh;
+}
+
 void Init_slim_attrib_ext() {
   VALUE c = rb_cObject;
   c = rb_const_get_at(c, rb_intern("Mysql"));
@@ -119,4 +140,5 @@ void Init_slim_attrib_ext() {
   rb_define_private_method(cRowHash, "fetch_by_index", (VALUE(*)(ANYARGS))fetch_by_index, 1);
   rb_define_method(cRowHash, "[]", (VALUE(*)(ANYARGS))slim_fetch, 1);
   rb_define_method(cRowHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
+  rb_define_method(cRowHash, "dup", (VALUE(*)(ANYARGS))dup, 0);
 }

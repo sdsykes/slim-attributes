@@ -113,6 +113,30 @@ class SlimAttributesTest < Test::Unit::TestCase
     GC.start
     assert true, "gc didn't crash"
   end
+  
+  # rails query cache uses dup
+  def test_dup
+    items = Product.find(:all)
+    attr_dup = items[0].attributes_iv.dup
+    assert_equal "product_0", attr_dup["name"], "name must be correct in dup'd attributes"
+    attr_dup = items[0].attributes_iv.dup
+    assert_equal "product_0", attr_dup["name"], "name must be correct in dup'd attributes 2nd time"
+  end
+
+  def test_cached_result
+    ActiveRecord::Base.connection.cache do
+      item1 = Product.find_by_id(1)
+      item1.name = "foo"
+      item2 = Product.find_by_id(1)
+      assert_equal "product_0", item2.name, "name must be original from cached query"
+      item3 = Product.find_by_id(1)
+      item1.name = "bar"
+      assert_equal "product_0", item3.name, "name must be original from cached query"
+      item2.name << "_test"
+# unmodified rails fails this test - but does it matter either way?
+      check_attributes_for(item3, 0)
+    end
+  end
 
   def teardown
     SlimDbTestUtils.remove_db
