@@ -137,6 +137,15 @@ class SlimAttributesTest < Test::Unit::TestCase
       check_attributes_for(item3, 0)
     end
   end
+  
+  def test_accessing_destroyed_object_attributes
+    item1 = Product.find_by_id(1)
+    assert_equal false, item1.frozen?
+    item1.destroy  # object is frozen
+    assert_equal true, item1.frozen?
+    check_attributes_for(item1, 0)
+    assert_raises(TypeError) {item1.name = "another product"}
+  end
 
   def teardown
     SlimDbTestUtils.remove_db
