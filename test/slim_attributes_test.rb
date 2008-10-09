@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'active_record'
+require 'active_record/version'
 require 'slim_attributes'
 require 'test/unit'
 require File.dirname(__FILE__) + "/products"
@@ -80,6 +81,7 @@ class SlimAttributesTest < Test::Unit::TestCase
     old_name = item.name
     item.attributes_iv.update("name"=>"foobar")
     assert_equal "foobar", item.name, "update must work"
+    item.name_will_change! if ActiveRecord::VERSION::STRING >= "2.1.0"
     item.save
     item = Product.find_by_id(1)
     assert_equal "foobar", item.name, "update must work and stick through db"
