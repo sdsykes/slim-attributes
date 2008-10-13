@@ -3,6 +3,10 @@
 
 require 'mysql'
 
+class Mysql::Result; class RowHash; end; end
+
+require 'slim_attrib_ext'
+
 class Mysql::Result
   class RowHash
     def marshal_dump
@@ -13,10 +17,6 @@ class Mysql::Result
       @real_hash = hash
     end
 
-    def has_key?(name)
-      @real_hash ? @real_hash.has_key?(name) : @field_indexes[name]
-    end
-
     alias_method :include?, :has_key?
 
     def keys
@@ -24,7 +24,13 @@ class Mysql::Result
     end
 
     def to_hash
-      @real_hash ||= @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = fetch_by_index(fi[1]); memo}
+      if @real_hash
+        @real_hash
+      else
+        @real_hash = @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = fetch_by_index(fi[1]); memo}
+        @field_indexes = nil
+        @real_hash
+      end
     end
 
     def to_a
@@ -44,5 +50,3 @@ class Mysql::Result
     end
   end
 end
-
-require 'slim_attrib_ext'
