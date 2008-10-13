@@ -51,14 +51,14 @@ static VALUE all_hashes(VALUE obj) {
 
   /* array of result rows */
   all_hashes_ary = rb_ary_new2(nr);
-  row_info_space = calloc(nf * nr, 1);  // allocate all the row info space we need here
-  rb_ivar_set(all_hashes_ary, row_info_id, Data_Wrap_Struct(cClass, 0, free, row_info_space)); // just for GC
+  row_info_space = ruby_xcalloc(nf * nr, 1);  // allocate all the row info space we need here
+  rb_ivar_set(all_hashes_ary, row_info_id, Data_Wrap_Struct(cClass, 0, ruby_xfree, row_info_space)); // just for GC
 
   for (i=0; i < nr; i++) {
     row = mysql_fetch_row(res);         // get the row
     lengths = mysql_fetch_lengths(res); // get lengths
     for (s=j=0; j < nf; j++) s += lengths[j];  // s = total of lengths
-    pointers_space = malloc((nf + 1) * sizeof(char *) + s);  // data pointers, data
+    pointers_space = ruby_xmalloc((nf + 1) * sizeof(char *) + s);  // data pointers, data
     p = *pointers_space = (char *)(pointers_space + nf + 1);  // pointer to first data item
     for (j=0; j < nf; j++) {
       len = (unsigned int)lengths[j];
@@ -69,7 +69,7 @@ static VALUE all_hashes(VALUE obj) {
       pointers_space[j + 1] = p;
     }
     frh = rb_class_new_instance(0, NULL, cRowHash);
-    rb_ivar_set(frh, pointers_id, Data_Wrap_Struct(cClass, 0, free, pointers_space));
+    rb_ivar_set(frh, pointers_id, Data_Wrap_Struct(cClass, 0, ruby_xfree, pointers_space));
     rb_ivar_set(frh, row_info_id, Data_Wrap_Struct(cClass, 0, 0, row_info_space));
     rb_ivar_set(frh, field_indexes_id, col_names_hsh);
     rb_ary_store(all_hashes_ary, i, frh);
@@ -134,12 +134,12 @@ static VALUE dup(VALUE obj) {
   if (REAL_HASH_EXISTS) return rb_obj_dup(rb_ivar_get(obj, real_hash_id));
 
   nf = RHASH(field_indexes)->tbl->num_entries;
-  row_info_space = malloc(nf);
+  row_info_space = ruby_xmalloc(nf);
   memcpy(row_info_space, GetCharPtr(rb_ivar_get(obj, row_info_id)), nf);
   for (i=0; i < nf; i++) row_info_space[i] &= ~SLIM_IS_SET;  // remove any set flags
   frh = rb_class_new_instance(0, NULL, cRowHash);
   rb_ivar_set(frh, pointers_id, rb_ivar_get(obj, pointers_id));
-  rb_ivar_set(frh, row_info_id, Data_Wrap_Struct(cClass, 0, free, row_info_space));
+  rb_ivar_set(frh, row_info_id, Data_Wrap_Struct(cClass, 0, ruby_xfree, row_info_space));
   rb_ivar_set(frh, field_indexes_id, field_indexes);
   return frh;
 }
