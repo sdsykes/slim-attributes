@@ -1,3 +1,6 @@
+// Author: Stephen Sykes
+// http://pennysmalls.com
+
 #include "ruby.h"
 #include "st.h"
 

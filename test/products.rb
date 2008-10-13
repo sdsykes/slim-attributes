@@ -1,3 +1,6 @@
+# Author: Stephen Sykes
+# http://pennysmalls.com
+
 class Product < ActiveRecord::Base
   
   def self.create_product_table

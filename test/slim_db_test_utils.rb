@@ -1,3 +1,6 @@
+# Author: Stephen Sykes
+# http://pennysmalls.com
+
 module SlimDbTestUtils
   DB_NAME = "slim_attributes_test"
 

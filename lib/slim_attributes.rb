@@ -1,3 +1,6 @@
+# Author: Stephen Sykes
+# http://pennysmalls.com
+
 require 'mysql'
 
 class Mysql::Result

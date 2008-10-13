@@ -1,3 +1,6 @@
+# Author: Stephen Sykes
+# http://pennysmalls.com
+
 require 'rubygems'
 require 'active_record'
 require 'active_record/version'

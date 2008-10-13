@@ -1,3 +1,6 @@
+# Author: Stephen Sykes
+# http://pennysmalls.com
+
 require 'rubygems'
 require 'active_record'
 require File.dirname(__FILE__) + "/products"
