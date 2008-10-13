@@ -24,13 +24,10 @@ class Mysql::Result
     end
 
     def to_hash
-      if @real_hash
-        @real_hash
-      else
-        @real_hash = @field_indexes.inject({}) {|memo, fi| memo[fi[0]] = fetch_by_index(fi[1]); memo}
-        @field_indexes = nil
-        @real_hash
-      end
+      return @real_hash if @real_hash
+      @field_indexes.each_pair {|name, index| @field_indexes[name] = fetch_by_index(index)} # reuse FI hash
+      @real_hash, @field_indexes = @field_indexes, nil
+      @real_hash
     end
 
     def to_a
