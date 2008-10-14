@@ -5,7 +5,7 @@ This is a small patch to the ActiveRecord Mysql adaptor that stops rails from us
 
 It is faster, and uses less memory.
 
-Measuring with just ActiveRecord code - fetching stuff from the database - we see anything up to a 50% (or more) speed increase, but I suppose it really depends on your system and environment, and what you are doing with the results from the database.  Measure your own system and send me the results!
+Measuring with just ActiveRecord code - fetching stuff from the database - we see anything up to a 50% (or more) speed increase, but I suppose it really depends on your system and environment, and what you are doing with the results from the database.  The more columns your tables have, the better the improvement will likely be.  Measure your own system and send me the results!
 
 
 Installation
@@ -38,7 +38,7 @@ The field contents are then instantiated into Ruby strings on demand - ruby stri
 
 ===========
 
-No warranty - this plugin likely needs some more work if you want it to be foolproof.  However, that said, we are using it in our production environment with good results.
-
+No warranty - this gem has been tested, but not in all environments.  However, that said, we are using it in our production environment with good results.
+Please report bugs to sdsykes at symbol gmail pip com.
 
 Copyright (c) 2008 Stephen Sykes, released under the MIT license
