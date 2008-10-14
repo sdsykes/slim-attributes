@@ -23,10 +23,15 @@ class Mysql::Result
       @real_hash ? @real_hash.keys : @field_indexes.keys
     end
 
+    # If you want to do anything other than [], []=, dup, keys and has_key? then 
+    # we'll handle that by doing the operation on a real ruby hash.
+    # This should be the exception though, and the efficiencies of using slim-attributes
+    # are lost when this happens.
     def to_hash
       return @real_hash if @real_hash
-      @field_indexes.each_pair {|name, index| @field_indexes[name] = fetch_by_index(index)} # reuse FI hash
-      @real_hash, @field_indexes = @field_indexes, nil
+      @real_hash = {}
+      @field_indexes.each_pair {|name, index| @real_hash[name] = fetch_by_index(index)}
+      @field_indexes = nil
       @real_hash
     end
 
