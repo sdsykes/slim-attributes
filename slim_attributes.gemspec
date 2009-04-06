@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'slim-attributes'
-  s.version = "0.5.0"
+  s.version = "0.6.0"
   s.platform = Gem::Platform::RUBY
   s.summary = <<-DESC.strip.gsub(/\n\s+/, " ")
     Slim attributes boosts speed in Rails/Mysql ActiveRecord Models by avoiding

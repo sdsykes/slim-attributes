@@ -63,8 +63,15 @@ static VALUE all_hashes(VALUE obj) {
     lengths = mysql_fetch_lengths(res);
     for (s=j=0; j < nf; j++) s += lengths[j];  // s = total of lengths
     pointers_space = ruby_xmalloc((nf + 1) * sizeof(char *) + s);  // space for data pointers & data
+    if (!pointers_space) {
+      rb_raise(rb_eNoMemError, "out of memory");
+    }
     p = *pointers_space = (char *)(pointers_space + nf + 1);  // pointer to first data item
     row_info_space = ruby_xcalloc(nf, 1);  // space for flags for each column in this row
+    if (!row_info_space) {
+      ruby_xfree(pointers_space);
+      rb_raise(rb_eNoMemError, "out of memory");      
+    }
     for (j=0; j < nf; j++) {
       len = (unsigned int)lengths[j];
       if (len) {
@@ -154,6 +161,7 @@ static VALUE dup(VALUE obj) {
 
   nf = RHASH(field_indexes)->tbl->num_entries;
   row_info_space = ruby_xmalloc(nf);  // dup needs its own set of flags
+  if (!row_info_space) rb_raise(rb_eNoMemError, "out of memory");
   memcpy(row_info_space, GetCharPtr(rb_ivar_get(obj, row_info_id)), nf);
   for (i=0; i < nf; i++) row_info_space[i] &= ~SLIM_IS_SET;  // remove any set flags
   frh = rb_class_new_instance(0, NULL, cRowHash);  // make the new row data object
