@@ -11,6 +11,7 @@ begin
     instantiating Hashes for each result row, and lazily instantiating attributes as needed."
     s.authors = ["Stephen Sykes"]
     s.files = FileList["[A-Z]*", "{ext,lib,test}/**/*"]
+    s.extensions = "ext/extconf.rb"
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://
