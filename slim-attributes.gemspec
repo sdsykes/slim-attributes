@@ -2,13 +2,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{slim-attributes}
-  s.version = "0.6.2"
+  s.version = "0.6.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stephen Sykes"]
-  s.date = %q{2009-04-07}
+  s.date = %q{2009-07-12}
   s.description = %q{Slim attributes boosts speed in Rails/Mysql ActiveRecord Models by avoiding instantiating Hashes for each result row, and lazily instantiating attributes as needed.}
   s.email = %q{sdsykes@gmail.com}
+  s.extensions = ["ext/extconf.rb"]
   s.extra_rdoc_files = ["README"]
   s.files = ["MIT_LICENCE", "Rakefile", "README", "VERSION.yml", "ext/extconf.rb", "ext/slim_attrib_ext.c", "lib/slim_attributes.rb", "test/benchmark.rb", "test/database.yml", "test/products.rb", "test/slim_attributes_test.rb", "test/slim_db_test_utils.rb"]
   s.has_rdoc = true
