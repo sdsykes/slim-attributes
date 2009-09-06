@@ -2,7 +2,12 @@
 // http://pennysmalls.com
 
 #include "ruby.h"
+
+#ifdef HAVE_RUBY_ST_H
 #include "ruby/st.h"
+#else
+#include "st.h"
+#endif
 
 #include <mysql.h>
 #include <errmsg.h>
@@ -159,7 +164,11 @@ static VALUE dup(VALUE obj) {
 
   if (REAL_HASH_EXISTS) return rb_obj_dup(rb_ivar_get(obj, real_hash_id));
 
+#ifdef RHASH_SIZE
   nf = RHASH_SIZE(field_indexes);
+#else
+  nf = RHASH(field_indexes)->tbl->num_entries;
+#endif
   row_info_space = ruby_xmalloc(nf);  // dup needs its own set of flags
   if (!row_info_space) rb_raise(rb_eNoMemError, "out of memory");
   memcpy(row_info_space, GetCharPtr(rb_ivar_get(obj, row_info_id)), nf);
@@ -177,8 +186,13 @@ static VALUE dup(VALUE obj) {
 static VALUE has_key(VALUE obj, VALUE name) {
   VALUE field_indexes;
 
+#ifdef RHASH_TBL
   if (REAL_HASH_EXISTS) return (st_lookup(RHASH_TBL(rb_ivar_get(obj, real_hash_id)), name, 0) ? Qtrue : Qfalse);
   else return (st_lookup(RHASH_TBL(field_indexes), name, 0) ? Qtrue : Qfalse);
+#else
+  if (REAL_HASH_EXISTS) return (st_lookup(RHASH(rb_ivar_get(obj, real_hash_id))->tbl, name, 0) ? Qtrue : Qfalse);
+  else return (st_lookup(RHASH(field_indexes)->tbl, name, 0) ? Qtrue : Qfalse);
+#endif
 }
 
 void Init_slim_attrib_ext() {
