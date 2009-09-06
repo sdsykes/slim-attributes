@@ -157,7 +157,7 @@ static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
 // []= before calling dup (the original values will be seen in the dup).  This works ok 
 // for active record usage, but perhaps could cause unexpected behaviour if model
 // attributes are dupped by the user after changing them.
-static VALUE dup(VALUE obj) {
+static VALUE slim_dup(VALUE obj) {
   VALUE frh, field_indexes;
   int nf, i;
   char *row_info_space;
@@ -209,7 +209,7 @@ void Init_slim_attrib_ext() {
   rb_define_private_method(cRowHash, "fetch_by_index", (VALUE(*)(ANYARGS))fetch_by_index, 1);
   rb_define_method(cRowHash, "[]", (VALUE(*)(ANYARGS))slim_fetch, 1);
   rb_define_method(cRowHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
-  rb_define_method(cRowHash, "dup", (VALUE(*)(ANYARGS))dup, 0);
+  rb_define_method(cRowHash, "dup", (VALUE(*)(ANYARGS))slim_dup, 0);
   rb_define_method(cRowHash, "has_key?", (VALUE(*)(ANYARGS))has_key, 1);  
   // set up some symbols that we will need
   pointers_id = rb_intern("@pointers");
