@@ -4,7 +4,7 @@
 require 'rubygems'
 require 'active_record'
 require 'active_record/version'
-require 'slim_attributes'
+require File.dirname(__FILE__) + '/../lib/slim_attributes'
 require 'test/unit'
 require File.dirname(__FILE__) + "/products"
 require File.dirname(__FILE__) + "/slim_db_test_utils"
@@ -14,6 +14,11 @@ class SlimAttributesTest < Test::Unit::TestCase
     SlimDbTestUtils.connect_and_create_db
     Product.create_product_table
     Product.make_some_products
+  end
+
+  def test_slim_attributes_is_proxying_results
+    x = Product.find(:first)
+    assert_equal Mysql::Result::RowHash, x.instance_variable_get(:@attributes).class
   end
 
   def test_finds_all
@@ -138,8 +143,11 @@ class SlimAttributesTest < Test::Unit::TestCase
       item1.name = "bar"
       assert_equal "product_0", item3.name, "name must be original from cached query"
       item2.name << "_test"
-# unmodified rails fails this test, it's ok
-#      check_attributes_for(item3, 0)
+# unmodified rails fails this test because the attributes are not dupped, only the
+# hash containing them is
+# but this test is useful - it shows that the rowhash has not been made
+# into a real hash before dup in called in the query cache code
+      check_attributes_for(item3, 0)
     end
   end
   

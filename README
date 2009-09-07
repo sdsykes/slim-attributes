@@ -11,7 +11,7 @@ Measuring with just ActiveRecord code - fetching stuff from the database - we se
 Installation
 ============
 
-Slim attributes works with ruby 1.8.6+ and 1.9.1+.
+Slim attributes works with ruby 1.8.x.  Ruby 1.9 support exists, but a bug in rails prevents it working (see Bugs for further info).
 
 You're going to need the mysql headers for this to work.
 
@@ -38,10 +38,18 @@ So this is an alternative implementation of all_hashes that returns a 'fake hash
 The field contents are then instantiated into Ruby strings on demand - ruby strings are only made if you need them.  Note that if you always look at all the columns when you fetch data from the database then this won't necessarily be faster that the unpatched mysql adapter.  But it won't be much slower either, and we do expect that most times not all the columns from a result set are accessed.
 
 
-===========
+Bugs
+====
+
+Slim attributes will not work correctly with rails and ruby 1.9.1 until this ticket is resolved:
+https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/3156-mysql_adapterrb-redefines-all_hashes-multiple-times-under-ruby-19
+
+
+Warranty
+========
 
 No warranty - this gem has been tested, but not in all environments.  However, that said, we are using it in our production environment with good results.
-Please report bugs to sdsykes at symbol gmail pip com.
+Please report bugs to sdsykes at symbol gmail pip com or via the github issue tracking system.
 
 
 Credits
