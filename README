@@ -13,12 +13,10 @@ Installation
 
 Slim attributes works with ruby 1.8.x.  Ruby 1.9 support exists, but a bug in rails prevents it working (see Bugs for further info).
 
-You're going to need the mysql headers for this to work.
-
 Try:
-gem install slim-attributes -- --with-mysql-config
+sudo gem install slim-attributes
 or:
-gem install slim-attributes
+sudo gem install slim-attributes -- --with-mysql-config
 
 then add this to environment.rb:
 require 'slim_attributes'
@@ -41,14 +39,15 @@ The field contents are then instantiated into Ruby strings on demand - ruby stri
 Bugs
 ====
 
-Slim attributes will not work correctly with rails and ruby 1.9.1 until this ticket is resolved:
+Slim attributes will not work correctly with rails and ruby 1.9.1 until Rails 2.3.5 is released due to this ticket:
 https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/3156-mysql_adapterrb-redefines-all_hashes-multiple-times-under-ruby-19
 
 
 Warranty
 ========
 
-No warranty - this gem has been tested, but not in all environments.  However, that said, we are using it in our production environment with good results.
+No warranty - this gem has been extensively tested, but not in all environments.  
+We are using it in our production environment with very good results.
 Please report bugs to sdsykes at symbol gmail pip com or via the github issue tracking system.
 
 
