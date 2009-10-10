@@ -12,7 +12,10 @@ begin
     s.authors = ["Stephen Sykes"]
     s.files = FileList["[A-Z]*", "{ext,lib,test}/**/*"]
     s.extensions = "ext/extconf.rb"
+    s.rubyforge_project = 'slim-attributes'
   end
+  Jeweler::GemcutterTasks.new
+  Jeweler::RubyforgeTasks.new
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://
 gems.github.com"
