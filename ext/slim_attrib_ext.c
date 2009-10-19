@@ -205,26 +205,6 @@ static VALUE has_key(VALUE obj, VALUE name) {
   }
 }
 
-// Add column name to an array if that column has been accessed
-static int add_if_set(VALUE key, VALUE value, VALUE *args) {
-  char *row_info = GetCharPtr(args[0]);
-  if (*(row_info + FIX2INT(value)) & SLIM_IS_SET) rb_ary_push(args[1], key);
-  return ST_CONTINUE;
-}
-
-// Return an array of all the columns that have been accessed so far
-// If a row has been made into a real hash, then there is no information
-// and nil is returned.
-static VALUE accessed_keys(VALUE obj) {
-  VALUE field_indexes, args[2];
-  
-  if (REAL_HASH_EXISTS) return Qnil;
-  args[0] = rb_ivar_get(obj, row_info_id);
-  args[1] = rb_ary_new();
-  rb_hash_foreach(field_indexes, add_if_set, (st_data_t)args);
-  return args[1];
-}
-
 void Init_slim_attrib_ext() {
   int i;
   char col_name[16];
