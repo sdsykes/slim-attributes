@@ -18,7 +18,8 @@
 #define GetCharStarPtr(obj) (Check_Type(obj, T_DATA), (char**)DATA_PTR(obj))
 
 VALUE cRowHash, cClass;
-ID pointers_id, row_info_id, field_indexes_id, real_hash_id, to_hash_id;
+ID pointers_id, row_info_id, field_indexes_id, real_hash_id, to_hash_id, sq_parens_id, 
+   sq_parens_equal_id, has_key_id;
 
 #define MAX_CACHED_COLUMN_IDS 40
 ID column_ids[MAX_CACHED_COLUMN_IDS];
@@ -30,8 +31,8 @@ struct mysql_res {
 };
 
 // row info
-#define SLIM_IS_NULL (char)0x01
-#define SLIM_IS_SET (char)0x02
+#define SLIM_IS_NULL 0x01
+#define SLIM_IS_SET 0x02
 
 #define GET_COL_IV_ID(str, cnum) (cnum < MAX_CACHED_COLUMN_IDS ? column_ids[cnum] : (sprintf(str, "@col_%ld", cnum), rb_intern(str)))
 
@@ -103,7 +104,7 @@ static VALUE fetch_by_index(VALUE obj, VALUE index) {
   long col_number = FIX2LONG(index);
   unsigned int length;
   row_info = GetCharPtr(rb_ivar_get(obj, row_info_id)) + col_number;  // flags for this column
-  if (*row_info == SLIM_IS_NULL) return Qnil;  // return nil if null from db
+  if (*row_info & SLIM_IS_NULL) return Qnil;  // return nil if null from db
   col_id = GET_COL_IV_ID(col_name, col_number);
   if (*row_info == SLIM_IS_SET) return rb_ivar_get(obj, col_id);  // was made to a string already
   pointers = GetCharStarPtr(rb_ivar_get(obj, pointers_id));  // find the data and make ruby string
@@ -118,12 +119,16 @@ static VALUE fetch_by_index(VALUE obj, VALUE index) {
 // This is the [] method of the row data object.
 // It checks for a real hash, but if none exists it will call fetch_by_index
 static VALUE slim_fetch(VALUE obj, VALUE name) {
-  VALUE field_indexes, hash_lookup;
+  VALUE field_indexes, hash_lookup, real_hash;
   
-  if (REAL_HASH_EXISTS) return rb_hash_aref(rb_ivar_get(obj, real_hash_id), name);
+  if (REAL_HASH_EXISTS) return rb_funcall(rb_ivar_get(obj, real_hash_id), sq_parens_id, 1, name);
 
   hash_lookup = rb_hash_aref(field_indexes, name);
-  if (NIL_P(hash_lookup)) return Qnil;
+  if (NIL_P(hash_lookup)) {
+    real_hash = rb_ivar_get(obj, real_hash_id);
+    if (NIL_P(real_hash)) return Qnil;
+    return rb_funcall(real_hash, sq_parens_id, 1, name);
+  }
   return fetch_by_index(obj, hash_lookup);
 }
 
@@ -136,10 +141,10 @@ static VALUE set_element(VALUE obj, VALUE name, VALUE val) {
   char col_name[16];
   ID col_id;
 
-  if (REAL_HASH_EXISTS) return rb_hash_aset(rb_ivar_get(obj, real_hash_id), name, val);
+  if (REAL_HASH_EXISTS) return rb_funcall(rb_ivar_get(obj, real_hash_id), sq_parens_equal_id, 2, name, val);
   
   hash_lookup = rb_hash_aref(field_indexes, name);  
-  if (NIL_P(hash_lookup)) return rb_hash_aset(rb_funcall(obj, to_hash_id, 0), name, val);
+  if (NIL_P(hash_lookup)) return rb_funcall(rb_funcall(obj, to_hash_id, 0), sq_parens_equal_id, 2, name, val);
   col_number = FIX2LONG(hash_lookup);
   col_id = GET_COL_IV_ID(col_name, col_number);
   rb_ivar_set(obj, col_id, val);
@@ -184,15 +189,40 @@ static VALUE slim_dup(VALUE obj) {
 // Calls to model property methods in AR cause a call to has_key?, so it
 // is implemented here in C for speed.
 static VALUE has_key(VALUE obj, VALUE name) {
-  VALUE field_indexes;
+  VALUE field_indexes, real_hash;
 
 #ifdef RHASH_TBL
   if (REAL_HASH_EXISTS) return (st_lookup(RHASH_TBL(rb_ivar_get(obj, real_hash_id)), name, 0) ? Qtrue : Qfalse);
-  else return (st_lookup(RHASH_TBL(field_indexes), name, 0) ? Qtrue : Qfalse);
+  else if (st_lookup(RHASH_TBL(field_indexes), name, 0)) return Qtrue;
 #else
   if (REAL_HASH_EXISTS) return (st_lookup(RHASH(rb_ivar_get(obj, real_hash_id))->tbl, name, 0) ? Qtrue : Qfalse);
-  else return (st_lookup(RHASH(field_indexes)->tbl, name, 0) ? Qtrue : Qfalse);
+  else if (st_lookup(RHASH(field_indexes)->tbl, name, 0)) return Qtrue;
 #endif
+  else {
+    real_hash = rb_ivar_get(obj, real_hash_id);
+    if (NIL_P(real_hash)) return Qfalse;
+    return rb_funcall(real_hash, has_key_id, 1, name);
+  }
+}
+
+// Add column name to an array if that column has been accessed
+static int add_if_set(VALUE key, VALUE value, VALUE *args) {
+  char *row_info = GetCharPtr(args[0]);
+  if (*(row_info + FIX2INT(value)) & SLIM_IS_SET) rb_ary_push(args[1], key);
+  return ST_CONTINUE;
+}
+
+// Return an array of all the columns that have been accessed so far
+// If a row has been made into a real hash, then there is no information
+// and nil is returned.
+static VALUE accessed_keys(VALUE obj) {
+  VALUE field_indexes, args[2];
+  
+  if (REAL_HASH_EXISTS) return Qnil;
+  args[0] = rb_ivar_get(obj, row_info_id);
+  args[1] = rb_ary_new();
+  rb_hash_foreach(field_indexes, add_if_set, (st_data_t)args);
+  return args[1];
 }
 
 void Init_slim_attrib_ext() {
@@ -210,13 +240,18 @@ void Init_slim_attrib_ext() {
   rb_define_method(cRowHash, "[]", (VALUE(*)(ANYARGS))slim_fetch, 1);
   rb_define_method(cRowHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
   rb_define_method(cRowHash, "dup", (VALUE(*)(ANYARGS))slim_dup, 0);
-  rb_define_method(cRowHash, "has_key?", (VALUE(*)(ANYARGS))has_key, 1);  
+  rb_define_method(cRowHash, "has_key?", (VALUE(*)(ANYARGS))has_key, 1);
+  rb_define_method(cRowHash, "accessed_keys", (VALUE(*)(ANYARGS))accessed_keys, 0);
+  
   // set up some symbols that we will need
   pointers_id = rb_intern("@pointers");
   row_info_id = rb_intern("@row_info");
   field_indexes_id = rb_intern("@field_indexes");
   real_hash_id = rb_intern("@real_hash");
   to_hash_id = rb_intern("to_hash");
+  sq_parens_id = rb_intern("[]");
+  sq_parens_equal_id = rb_intern("[]=");
+  has_key_id = rb_intern("has_key?");
   for(i=0; i < MAX_CACHED_COLUMN_IDS; i++) {
     sprintf(col_name, "@col_%d", i);
     column_ids[i] = rb_intern(col_name);
