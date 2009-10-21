@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{slim-attributes}
-  s.version = "0.7.1"
+  s.version = "0.7.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stephen Sykes"]
-  s.date = %q{2009-10-20}
+  s.date = %q{2009-10-21}
   s.description = %q{Slim attributes boosts speed in Rails/Mysql ActiveRecord Models by avoiding
     instantiating Hashes for each result row, and lazily instantiating attributes as needed.}
   s.email = %q{sdsykes@gmail.com}
