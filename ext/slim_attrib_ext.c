@@ -221,7 +221,6 @@ void Init_slim_attrib_ext() {
   rb_define_method(cRowHash, "[]=", (VALUE(*)(ANYARGS))set_element, 2);
   rb_define_method(cRowHash, "dup", (VALUE(*)(ANYARGS))slim_dup, 0);
   rb_define_method(cRowHash, "has_key?", (VALUE(*)(ANYARGS))has_key, 1);
-  rb_define_method(cRowHash, "accessed_keys", (VALUE(*)(ANYARGS))accessed_keys, 0);
   
   // set up some symbols that we will need
   pointers_id = rb_intern("@pointers");
