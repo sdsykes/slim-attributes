@@ -18,7 +18,7 @@ def default_mysql_config_path
   mysql_config_paths.compact.first
 end
 
-if /mswin32/ =~ RUBY_PLATFORM
+if RUBY_PLATFORM =~ /mswin|mingw/
   inc, lib = dir_config('mysql')
   exit 1 unless have_library("libmysql")
 elsif mc = with_config('mysql-config', default_mysql_config_path) then
