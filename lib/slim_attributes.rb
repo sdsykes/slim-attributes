@@ -1,6 +1,10 @@
 # Author: Stephen Sykes
 # http://pennysmalls.com
 
+module SlimAttributes
+  VERSION = "0.7.8"
+end
+
 require 'mysql'
 
 class Mysql::Result; class RowHash; end; end
